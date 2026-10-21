@@ -6,9 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # rapidocr 3.x 不再自帶推論引擎，需另裝 onnxruntime
-# fastapi>=0.147 會把未傳的 bool 表單欄位當 False，導致 OCR 三階段全關、回傳空結果
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt "rapidocr==3.10.0" onnxruntime "fastapi<0.147"
+RUN pip install --no-cache-dir -r requirements.txt "rapidocr==3.10.0" onnxruntime
 
 COPY rapidocr_api ./rapidocr_api
 

@@ -11,8 +11,9 @@ from typing import Dict, Optional
 
 import numpy as np
 import uvicorn
-from fastapi import FastAPI, Form, UploadFile
+from fastapi import FastAPI, Form, HTTPException, UploadFile
 from PIL import Image
+from pydantic import TypeAdapter, ValidationError
 from rapidocr import RapidOCR
 from starlette.formparsers import MultiPartParser
 
@@ -57,6 +58,16 @@ class OCRAPIUtils:
         return out_dict
 
 
+def parse_form_bool(value: Optional[str]) -> Optional[bool]:
+    # fastapi>=0.147 会把未传的 bool 表单字段当成 False，所以改用 str 接收，未传时保持 None
+    if value is None:
+        return None
+    try:
+        return TypeAdapter(bool).validate_python(value)
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+
 app = FastAPI()
 processor = OCRAPIUtils()
 
@@ -70,9 +81,9 @@ def root():
 def ocr(
         image_file: Optional[UploadFile] = None,
         image_data: str = Form(None),
-        use_det: bool = Form(None),
-        use_cls: bool = Form(None),
-        use_rec: bool = Form(None),
+        use_det: Optional[str] = Form(None),
+        use_cls: Optional[str] = Form(None),
+        use_rec: Optional[str] = Form(None),
 ):
     if image_file:
         img = Image.open(image_file.file)
@@ -84,7 +95,12 @@ def ocr(
         raise ValueError(
             "When sending a post request, data or files must have a value."
         )
-    ocr_res = processor(img, use_det=use_det, use_cls=use_cls, use_rec=use_rec)
+    ocr_res = processor(
+        img,
+        use_det=parse_form_bool(use_det),
+        use_cls=parse_form_bool(use_cls),
+        use_rec=parse_form_bool(use_rec),
+    )
 
     return ocr_res
 
