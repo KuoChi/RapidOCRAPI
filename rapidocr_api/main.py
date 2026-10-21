@@ -4,6 +4,7 @@
 import argparse
 import base64
 import io
+import itertools
 import os
 import sys
 from pathlib import Path
@@ -28,35 +29,40 @@ class OCRAPIUtils:
         cls_model_path = os.getenv("cls_model_path", None)
         rec_model_path = os.getenv("rec_model_path", None)
 
-        if det_model_path is None or cls_model_path is None or rec_model_path is None:
-            self.ocr = RapidOCR()
-        else:
-            self.ocr = RapidOCR(
+        params = {}
+        if not (det_model_path is None or cls_model_path is None or rec_model_path is None):
+            params = {
+                "Det.model_path": det_model_path,
+                "Cls.model_path": cls_model_path,
+                "Rec.model_path": rec_model_path,
+            }
+
+        # RapidOCR 会把调用时传入的 use_* 写回实例，并发请求共用一个实例时会互相覆盖。
+        # 因此每种 use_* 组合各建一个实例，调用时不再传 use_*；模型在实例首次使用时才加载
+        self.ocr_by_flags = {
+            flags: RapidOCR(
                 params={
-                    "Det.model_path": det_model_path,
-                    "Cls.model_path": cls_model_path,
-                    "Rec.model_path": rec_model_path,
+                    **params,
+                    "Global.use_det": flags[0],
+                    "Global.use_cls": flags[1],
+                    "Global.use_rec": flags[2],
                 }
             )
-
-        # RapidOCR 会把传入的 use_* 写回实例并沿用到之后的调用，所以记下默认值，每次都显式传入
-        self.default_flags = {
-            "use_det": self.ocr.use_det,
-            "use_cls": self.ocr.use_cls,
-            "use_rec": self.ocr.use_rec,
+            for flags in itertools.product([True, False], repeat=3)
         }
+        # 未传的 use_* 沿用 rapidocr 配置里的默认值
+        default_ocr = RapidOCR(params=params)
+        self.default_flags = (default_ocr.use_det, default_ocr.use_cls, default_ocr.use_rec)
 
     def __call__(
             self, ori_img: Image.Image, use_det=None, use_cls=None, use_rec=None, **kwargs
     ) -> Dict:
         img = np.array(ori_img)
-        ocr_res = self.ocr(
-            img,
-            use_det=self.default_flags["use_det"] if use_det is None else use_det,
-            use_cls=self.default_flags["use_cls"] if use_cls is None else use_cls,
-            use_rec=self.default_flags["use_rec"] if use_rec is None else use_rec,
-            **kwargs,
+        flags = tuple(
+            default if flag is None else flag
+            for flag, default in zip((use_det, use_cls, use_rec), self.default_flags)
         )
+        ocr_res = self.ocr_by_flags[flags](img, **kwargs)
 
         # use_rec=False 时返回 TextDetOutput（没有 txts），use_det=False 时返回 TextRecOutput（没有 boxes），
         # 只做分类时返回 TextClsOutput（没有 boxes 和 txts）
