@@ -126,6 +126,7 @@ curl -F image_file=@tests/test_files/ch_en_num.jpg http://localhost:9003/ocr
 
 - 建置時需要能連到 PyPI；預設模型已包含在 `rapidocr` 套件中，執行時不需要連外。
 - 映像檔內建 `HEALTHCHECK`（請求 `GET /`），不依賴 `curl` / `wget`。
+- 容器以 UID 10001 的非 root 使用者（`app`）執行；程式與模型都只需讀取，也可搭配唯讀檔案系統執行。
 - 預設以 1 個 uvicorn worker 執行：每種參數組合各有一個 `RapidOCR` 實例，單一 worker 就能同時處理多個請求，增加 worker 只會多佔記憶體。
 - 同時進行的推論數量由環境變數 `ocr_max_concurrency` 控制，預設等於 `os.cpu_count()`；超過的請求會排隊等候。注意：容器的 CPU 限制（例如 `--cpus`、Coolify 的 CPU limit）不會反映在 `os.cpu_count()` 上，有設 CPU 限制時請手動設定這個值。
 - 記憶體參考值（12 顆 CPU 的機器，40 個請求同時進來，以 cgroup `memory.peak` 量測峰值）：

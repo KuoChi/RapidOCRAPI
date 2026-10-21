@@ -11,6 +11,10 @@ RUN pip install --no-cache-dir -c constraints.txt -r requirements.txt onnxruntim
 
 COPY rapidocr_api ./rapidocr_api
 
+# 以非 root 使用者執行；程式與套件維持 root 擁有，執行時只需讀取
+RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app
+USER 10001
+
 EXPOSE 9003
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
