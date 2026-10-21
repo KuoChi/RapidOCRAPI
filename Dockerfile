@@ -1,7 +1,9 @@
 FROM python:3.12-slim-bookworm
 
+# MALLOC_ARENA_MAX：限制 glibc 在多執行緒下建立的 malloc arena 數量，降低峰值與閒置記憶體
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    MALLOC_ARENA_MAX=2
 
 WORKDIR /app
 

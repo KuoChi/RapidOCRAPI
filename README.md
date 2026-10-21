@@ -134,11 +134,11 @@ curl -F image_file=@tests/test_files/ch_en_num.jpg http://localhost:9003/ocr
 
     |`ocr_max_concurrency`|峰值記憶體|160 個請求耗時|
     |:---|:---|:---|
-    |12（預設）|約 2.7 GiB|約 37 秒|
-    |4|約 2.0 GiB|約 59 秒|
-    |2|約 1.6 GiB|約 69 秒|
+    |12（預設）|約 1.7 GiB|約 38 秒|
+    |4|約 0.9 GiB|約 60 秒|
+    |2|約 0.8 GiB|約 67 秒|
 
-- 閒置時約 65 MiB；處理過請求後記憶體不會完全釋放（實測約 1.2–1.7 GiB）。記憶體上限請依 `ocr_max_concurrency` 對應的峰值再預留餘裕，使用預設值時建議 3 GB 以上。
+- 閒置時約 65 MiB；處理過請求後記憶體不會完全釋放（實測約 0.5–0.9 GiB）。映像檔已設定 `MALLOC_ARENA_MAX=2`，限制 glibc 在多執行緒下的 malloc arena 數量；未設定時，預設值實測峰值約 2.5 GiB、處理後約 1.5 GiB。記憶體上限請依 `ocr_max_concurrency` 對應的峰值再預留餘裕，使用預設值時建議 2 GB 以上。
 - 如果所在環境對 Docker 網段有限制，請在 Docker daemon 的 `bip` / `default-address-pools` 指定可用的網段，不要依賴預設值。
 
 ### ☁️ Coolify 部署
@@ -147,7 +147,7 @@ curl -F image_file=@tests/test_files/ch_en_num.jpg http://localhost:9003/ocr
 2. **Build Pack** 選 **Dockerfile**，Dockerfile 位置維持 `/Dockerfile`。
 3. **Ports Exposes** 填 `9003`，**Domains** 填要使用的網域（HTTPS 由 Coolify 的 Traefik 處理）。
 4. **Health check**：Coolify 介面上的健康檢查需要容器內有 `curl` / `wget`，本映像檔沒有，請在介面上關閉，改用 Dockerfile 內的 `HEALTHCHECK`。
-5. **資源限制**：記憶體上限依 `ocr_max_concurrency` 設定，參考上方「🐳 Docker 部署」的數值，使用預設值時建議 3 GB 以上。如果有設 CPU 上限，請在 **Environment Variables** 一併設定 `ocr_max_concurrency`，例如設成與 CPU 上限相同的數字。
+5. **資源限制**：記憶體上限依 `ocr_max_concurrency` 設定，參考上方「🐳 Docker 部署」的數值，使用預設值時建議 2 GB 以上。如果有設 CPU 上限，請在 **Environment Variables** 一併設定 `ocr_max_concurrency`，例如設成與 CPU 上限相同的數字。
 6. 部署完成後測試：
 
     ```bash
