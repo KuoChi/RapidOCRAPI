@@ -62,7 +62,7 @@ class OCRAPIUtils:
         self.semaphore = threading.BoundedSemaphore(max_concurrency)
 
     def __call__(
-            self, ori_img: Image.Image, use_det=None, use_cls=None, use_rec=None, **kwargs
+            self, ori_img: Image.Image, use_det=None, use_cls=None, use_rec=None
     ) -> Dict:
         flags = tuple(
             default if flag is None else flag
@@ -70,7 +70,8 @@ class OCRAPIUtils:
         )
         with self.semaphore:
             img = np.array(ori_img)
-            ocr_res = self.ocr_by_flags[flags](img, **kwargs)
+            # 不传任何参数：RapidOCR 会把调用参数写回共用实例，并发时互相干扰
+            ocr_res = self.ocr_by_flags[flags](img)
 
         # use_rec=False 时返回 TextDetOutput（没有 txts），use_det=False 时返回 TextRecOutput（没有 boxes），
         # 只做分类时返回 TextClsOutput（没有 boxes 和 txts）
