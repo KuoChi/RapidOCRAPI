@@ -19,4 +19,4 @@ EXPOSE 9003
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9003/', timeout=3)"
 
-CMD ["python", "-m", "rapidocr_api.main", "-ip", "0.0.0.0", "-p", "9003", "-workers", "2"]
+CMD ["python", "-m", "rapidocr_api.main", "-ip", "0.0.0.0", "-p", "9003", "-workers", "1"]
