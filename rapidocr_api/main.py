@@ -7,6 +7,7 @@ import io
 import itertools
 import os
 import sys
+import threading
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -54,15 +55,22 @@ class OCRAPIUtils:
         default_ocr = RapidOCR(params=params)
         self.default_flags = (default_ocr.use_det, default_ocr.use_cls, default_ocr.use_rec)
 
+        # 限制同时进行的图片解码与推理数量，避免并发请求过多时内存暴涨；默认等于 CPU 数
+        max_concurrency = int(os.getenv("ocr_max_concurrency", os.cpu_count() or 1))
+        if max_concurrency < 1:
+            raise ValueError("ocr_max_concurrency must be >= 1")
+        self.semaphore = threading.BoundedSemaphore(max_concurrency)
+
     def __call__(
             self, ori_img: Image.Image, use_det=None, use_cls=None, use_rec=None, **kwargs
     ) -> Dict:
-        img = np.array(ori_img)
         flags = tuple(
             default if flag is None else flag
             for flag, default in zip((use_det, use_cls, use_rec), self.default_flags)
         )
-        ocr_res = self.ocr_by_flags[flags](img, **kwargs)
+        with self.semaphore:
+            img = np.array(ori_img)
+            ocr_res = self.ocr_by_flags[flags](img, **kwargs)
 
         # use_rec=False 时返回 TextDetOutput（没有 txts），use_det=False 时返回 TextRecOutput（没有 boxes），
         # 只做分类时返回 TextClsOutput（没有 boxes 和 txts）
