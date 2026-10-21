@@ -18,12 +18,12 @@
 
 </div>
 
-### 📖 简介
+### 📖 簡介
 
-- 该包是将[rapidocr](./rapidocr/install.md)库做了API封装，采用[FastAPI](https://fastapi.tiangolo.com/) + [uvicorn](https://www.uvicorn.org/)实现。
+- 本套件將 [rapidocr](./rapidocr/install.md) 函式庫包裝成 API，使用 [FastAPI](https://fastapi.tiangolo.com/) + [uvicorn](https://www.uvicorn.org/) 實作。
 - 定位是一個快速呼叫 `rapidocr` 的 API 介面。單一 worker 就能同時處理多個請求：每種 `use_*` 參數組合各有一個 `RapidOCR` 實例，同時進來的請求彼此不會干擾（詳見下方參數說明）。
 
-### 📌 版本依赖关系
+### 📌 版本相依性
 
 |`rapidocr_api`|`rapidocr`|
 |:---|:---|
@@ -31,7 +31,7 @@
 |`v0.2.x`（PyPI）|`rapidocr>1.0.0,<3.0.0`|
 |`v0.1.x`（PyPI）|`rapidocr_onnxruntime`|
 
-### 🛠️ 安装
+### 🛠️ 安裝
 
 建議使用 Docker 部署，請見下方「🐳 Docker 部署」。
 
@@ -45,7 +45,7 @@ pip install -r requirements.txt "rapidocr==3.10.0" onnxruntime
 
 ### 🚀 使用
 
-#### ▶️ 启动服务
+#### ▶️ 啟動服務
 
 在儲存庫根目錄執行：
 
@@ -60,15 +60,15 @@ python -m rapidocr_api.main -ip 0.0.0.0 -p 9005
 - `-workers` 預設為 1，一般不需要調整：單一 worker 就能同時處理多個請求，增加 worker 只會多佔記憶體。
 - 預設模型已包含在 `rapidocr` 套件中，執行時不需要連外。
 
-#### 📞 调用服务
+#### 📞 呼叫服務
 
-💻 命令行使用：
+💻 命令列使用：
 
 ```bash
 curl -F image_file=@1.png http://0.0.0.0:9003/ocr
 ```
 
-🐍 Python脚本使用：
+🐍 Python 腳本使用：
 
 ```python
 import requests
@@ -171,6 +171,6 @@ API 本身沒有任何驗證機制。如果綁定在公開網域上，建議用 
 - 關閉 escape 會套用到這個應用程式的所有 labels；之後如果啟用 www / non-www 轉址（這類 label 含有 `$`），需要重新檢查。
 - 以上流程依據 Coolify v4.4.7 的行為整理；也可以直接使用 Coolify 內建的 HTTP Basic Authentication（General → Security），不需要手動維護 labels。
 
-### 📚 文档
+### 📚 文件
 
-完整文档请移步：[docs](https://rapidai.github.io/RapidOCRDocs/main/install_usage/rapidocr_api/usage/)
+完整文件請參考：[docs](https://rapidai.github.io/RapidOCRDocs/main/install_usage/rapidocr_api/usage/)
