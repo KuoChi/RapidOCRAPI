@@ -1,21 +1,23 @@
-FROM python:3.10.11-slim-buster
+FROM python:3.12-slim-bookworm
 
-ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# 设置工作目录
 WORKDIR /app
 
-# 安装vim，如果不需要临时修改容器文件，此步骤可以删
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends vim && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# rapidocr 3.x 不再自帶推論引擎，需另裝 onnxruntime
+# fastapi>=0.147 會把未傳的 bool 表單欄位當 False，導致 OCR 三階段全關、回傳空結果
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt "rapidocr==3.10.0" onnxruntime "fastapi<0.147"
 
-RUN set -eux; \
-    pip install --no-cache-dir rapidocr_api pillow rapidocr-onnxruntime==1.3.25 -i https://mirrors.aliyun.com/pypi/simple; \
-    pip uninstall -y opencv-python; \
-    pip install --no-cache-dir opencv-python-headless -i https://mirrors.aliyun.com/pypi/simple
+COPY rapidocr_api ./rapidocr_api
+
+# 建置階段先下載模型，避免容器啟動時才連外下載
+RUN python -c "from rapidocr import RapidOCR; RapidOCR()"
 
 EXPOSE 9003
 
-CMD ["bash", "-c", "rapidocr_api -ip 0.0.0.0 -p 9003 -workers 2"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9003/', timeout=3)"
+
+CMD ["python", "-m", "rapidocr_api.main", "-ip", "0.0.0.0", "-p", "9003", "-workers", "2"]
