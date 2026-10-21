@@ -11,9 +11,6 @@ RUN pip install --no-cache-dir -r requirements.txt "rapidocr==3.10.0" onnxruntim
 
 COPY rapidocr_api ./rapidocr_api
 
-# 建置階段先下載模型，避免容器啟動時才連外下載
-RUN python -c "from rapidocr import RapidOCR; RapidOCR()"
-
 EXPOSE 9003
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
