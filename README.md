@@ -20,7 +20,7 @@
 
 ### 📖 簡介
 
-- 本套件將 [rapidocr](./rapidocr/install.md) 函式庫包裝成 API，使用 [FastAPI](https://fastapi.tiangolo.com/) + [uvicorn](https://www.uvicorn.org/) 實作。
+- 本套件將 [rapidocr](https://github.com/RapidAI/RapidOCR) 函式庫包裝成 API，使用 [FastAPI](https://fastapi.tiangolo.com/) + [uvicorn](https://www.uvicorn.org/) 實作。
 - 定位是一個快速呼叫 `rapidocr` 的 API 介面。單一 worker 就能同時處理多個請求：每種 `use_*` 參數組合各有一個 `RapidOCR` 實例，同時進來的請求彼此不會干擾（詳見下方參數說明）。
 
 ### 📌 版本相依性
