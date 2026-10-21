@@ -21,32 +21,44 @@
 ### 📖 简介
 
 - 该包是将[rapidocr](./rapidocr/install.md)库做了API封装，采用[FastAPI](https://fastapi.tiangolo.com/) + [uvicorn](https://www.uvicorn.org/)实现。
-- 定位是一个快速调用`rapidocr`的API接口，没有考虑多进程处理并发请求，如果有这需求的小伙伴，可以看看[gunicorn](https://gunicorn.org/)等。
+- 定位是一个快速调用`rapidocr`的API接口。单个 worker 即可并发处理请求：每种 `use_*` 参数组合各有一个 `RapidOCR` 实例，并发请求之间互不干扰（详见下文参数说明）。
 
 ### 📌 版本依赖关系
 
 |`rapidocr_api`|`rapidocr`|
 |:---|:---|
-|`v0.2.x`|`rapidocr>1.0.0,<3.0.0`|
-|`v0.1.x`|`rapidocr_onnxruntime`|
+|本仓库 `coolify-deploy` 分支|`rapidocr==3.10.0`，另需安装 `onnxruntime`|
+|`v0.2.x`（PyPI）|`rapidocr>1.0.0,<3.0.0`|
+|`v0.1.x`（PyPI）|`rapidocr_onnxruntime`|
 
 ### 🛠️ 安装
 
+推荐使用 Docker 部署，见下文「🐳 Docker 部署」。
+
+如需直接在本机运行，请从本仓库源码安装依赖。PyPI 上的 `rapidocr_api` 不包含本仓库的修正，也不会安装 `onnxruntime`：
+
 ```bash linenums="1"
-pip install rapidocr_api
+git clone -b coolify-deploy https://github.com/KuoChi/RapidOCRAPI.git
+cd RapidOCRAPI
+pip install -r requirements.txt "rapidocr==3.10.0" onnxruntime
 ```
 
 ### 🚀 使用
 
 #### ▶️ 启动服务
 
+在仓库根目录执行：
+
 ```bash
 # 默认参数启动
-rapidocr_api
+python -m rapidocr_api.main
 
-# 指定参数：端口与进程数量；
-rapidocr_api -ip 0.0.0.0 -p 9005 -workers 2
+# 指定参数：IP 与端口
+python -m rapidocr_api.main -ip 0.0.0.0 -p 9005
 ```
+
+- `-workers` 默认为 1，一般不需要调整：单个 worker 已可并发处理请求，增加 worker 只会多占内存。
+- 默认模型已包含在 `rapidocr` 安装包中，运行时不需要访问外网。
 
 #### 📞 调用服务
 
@@ -102,7 +114,7 @@ curl -F image_file=@line.png -F use_det=false http://0.0.0.0:9003/ocr
 ### 🐳 Docker 部署
 
 ```bash
-# 构建镜像（使用仓库内源码，构建时会下载模型到镜像中）
+# 构建镜像（使用仓库内源码）
 docker build -t rapidocr-api .
 
 # 运行
@@ -112,7 +124,7 @@ docker run -d --name rapidocr-api -p 9003:9003 rapidocr-api
 curl -F image_file=@tests/test_files/ch_en_num.jpg http://localhost:9003/ocr
 ```
 
-- 构建时需要能访问 PyPI 与模型下载源；模型已打包进镜像，运行时不需要外网。
+- 构建时需要能访问 PyPI；默认模型已包含在 `rapidocr` 安装包中，运行时不需要外网。
 - 镜像内置 `HEALTHCHECK`（请求 `GET /`），不依赖 `curl` / `wget`。
 - 默认以 1 个 uvicorn worker 运行：每种参数组合各有一个 `RapidOCR` 实例，单个 worker 即可并发处理请求，增加 worker 只会多占内存。
 - 内存参考：空闲约 65 MiB；16 个并发请求时峰值约 1.25 GiB，建议内存上限设为 1.5–2 GB。
