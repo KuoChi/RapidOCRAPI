@@ -1,3 +1,4 @@
+import base64
 import io
 import itertools
 import random
@@ -14,7 +15,7 @@ IMG_PATH = Path(__file__).parent / "test_files" / "ch_en_num.jpg"
 FIRST_LINE_TXT = "大桶装更划算"
 
 FULL_KEYS = {"rec_txt", "dt_boxes", "score"}
-DET_KEYS = {"dt_boxes", "score"}
+DET_KEYS = {"dt_boxes", "det_score"}
 REC_KEYS = {"rec_txt", "score"}
 
 client = TestClient(app)
@@ -87,6 +88,57 @@ def test_invalid_flag_returns_422(full_img, field):
     resp = post_ocr(full_img, {field: "abc"})
 
     assert resp.status_code == 422
+    errors = resp.json()["detail"]
+    assert [(err["loc"], err["type"], err["input"]) for err in errors] == [
+        (["body", field], "bool_parsing", "abc")
+    ]
+
+
+def test_invalid_flags_are_all_reported(full_img):
+    resp = post_ocr(full_img, {"use_det": "abc", "use_rec": "xyz"})
+
+    assert resp.status_code == 422
+    assert [err["loc"] for err in resp.json()["detail"]] == [
+        ["body", "use_det"],
+        ["body", "use_rec"],
+    ]
+
+
+def test_image_data_base64(full_img):
+    resp = client.post("/ocr", data={"image_data": base64.b64encode(full_img).decode()})
+
+    assert resp.status_code == 200
+    assert item_keys(resp.json()) == FULL_KEYS
+
+
+def test_missing_image_returns_400():
+    resp = client.post("/ocr", data={"use_det": "true"})
+
+    assert resp.status_code == 400
+
+
+@pytest.mark.parametrize(
+    "files,data",
+    [
+        ({"image_file": ("x.jpg", b"not an image", "image/jpeg")}, {}),
+        ({"image_file": ("x.jpg", b"", "image/jpeg")}, {}),
+        (None, {"image_data": "@@not-base64@@"}),
+        (None, {"image_data": base64.b64encode(b"not an image").decode()}),
+    ],
+    ids=["file-not-image", "file-empty", "data-bad-base64", "data-not-image"],
+)
+def test_invalid_image_returns_400(files, data):
+    resp = client.post("/ocr", files=files, data=data)
+
+    assert resp.status_code == 400
+    assert resp.json() == {"detail": "Invalid image."}
+
+
+def test_truncated_image_returns_400(full_img):
+    resp = post_ocr(full_img[: len(full_img) // 3])
+
+    assert resp.status_code == 400
+    assert resp.json() == {"detail": "Invalid image."}
 
 
 @pytest.mark.parametrize("flag", ["use_rec", "use_det", "use_cls"])
