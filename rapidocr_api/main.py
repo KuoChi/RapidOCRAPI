@@ -39,27 +39,44 @@ class OCRAPIUtils:
                 }
             )
 
+        # RapidOCR 会把传入的 use_* 写回实例并沿用到之后的调用，所以记下默认值，每次都显式传入
+        self.default_flags = {
+            "use_det": self.ocr.use_det,
+            "use_cls": self.ocr.use_cls,
+            "use_rec": self.ocr.use_rec,
+        }
+
     def __call__(
             self, ori_img: Image.Image, use_det=None, use_cls=None, use_rec=None, **kwargs
     ) -> Dict:
         img = np.array(ori_img)
         ocr_res = self.ocr(
-            img, use_det=use_det, use_cls=use_cls, use_rec=use_rec, **kwargs
+            img,
+            use_det=self.default_flags["use_det"] if use_det is None else use_det,
+            use_cls=self.default_flags["use_cls"] if use_cls is None else use_cls,
+            use_rec=self.default_flags["use_rec"] if use_rec is None else use_rec,
+            **kwargs,
         )
 
-        # use_rec=False 时返回 TextDetOutput（没有 txts），use_det=False 时返回 TextClsOutput（没有 boxes）
+        # use_rec=False 时返回 TextDetOutput（没有 txts），use_det=False 时返回 TextRecOutput（没有 boxes），
+        # 只做分类时返回 TextClsOutput（没有 boxes 和 txts）
         boxes = getattr(ocr_res, "boxes", None)
         txts = getattr(ocr_res, "txts", None)
         scores = getattr(ocr_res, "scores", None)
-        if boxes is None:
+        if boxes is not None:
+            num = len(boxes)
+        elif txts is not None:
+            num = len(txts)
+        else:
             return {}
 
         out_dict = {}
-        for i, box in enumerate(boxes):
+        for i in range(num):
             values = {}
             if txts is not None:
                 values["rec_txt"] = txts[i]
-            values["dt_boxes"] = box.tolist()
+            if boxes is not None:
+                values["dt_boxes"] = boxes[i].tolist()
             if scores is not None:
                 values["score"] = float(scores[i])
             out_dict[i] = values
