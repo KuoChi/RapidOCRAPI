@@ -47,14 +47,22 @@ class OCRAPIUtils:
             img, use_det=use_det, use_cls=use_cls, use_rec=use_rec, **kwargs
         )
 
-        if ocr_res.boxes is None or ocr_res.txts is None or ocr_res.scores is None:
+        # use_rec=False 时返回 TextDetOutput（没有 txts），use_det=False 时返回 TextClsOutput（没有 boxes）
+        boxes = getattr(ocr_res, "boxes", None)
+        txts = getattr(ocr_res, "txts", None)
+        scores = getattr(ocr_res, "scores", None)
+        if boxes is None:
             return {}
 
         out_dict = {}
-        for i, (boxes, txt, score) in enumerate(
-                zip(ocr_res.boxes, ocr_res.txts, ocr_res.scores)
-        ):
-            out_dict[i] = {"rec_txt": txt, "dt_boxes": boxes.tolist(), "score": score}
+        for i, box in enumerate(boxes):
+            values = {}
+            if txts is not None:
+                values["rec_txt"] = txts[i]
+            values["dt_boxes"] = box.tolist()
+            if scores is not None:
+                values["score"] = float(scores[i])
+            out_dict[i] = values
         return out_dict
 
 
