@@ -5,9 +5,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# rapidocr 3.x 不再自帶推論引擎，需另裝 onnxruntime
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt "rapidocr==3.10.0" onnxruntime
+# rapidocr 3.x 不再自帶推論引擎，需另裝 onnxruntime；所有套件版本鎖定在 constraints.txt
+COPY requirements.txt constraints.txt ./
+RUN pip install --no-cache-dir -c constraints.txt -r requirements.txt onnxruntime
 
 COPY rapidocr_api ./rapidocr_api
 

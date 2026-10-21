@@ -40,7 +40,7 @@
 ```bash linenums="1"
 git clone -b coolify-deploy https://github.com/KuoChi/RapidOCRAPI.git
 cd RapidOCRAPI
-pip install -r requirements.txt "rapidocr==3.10.0" onnxruntime
+pip install -c constraints.txt -r requirements.txt onnxruntime
 ```
 
 ### 🚀 使用
