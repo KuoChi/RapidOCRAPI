@@ -180,6 +180,17 @@ API 本身沒有任何驗證機制。如果綁定在公開網域上，建議用 
 - 關閉 escape 會套用到這個應用程式的所有 labels；之後如果啟用 www / non-www 轉址（這類 label 含有 `$`），需要重新檢查。
 - 以上流程依據 Coolify v4.4.7 的行為整理；也可以直接使用 Coolify 內建的 HTTP Basic Authentication（General → Security），不需要手動維護 labels。
 
+### 🧪 測試
+
+在儲存庫根目錄執行：
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest tests
+```
+
+測試涵蓋未傳旗標、8 種 `use_*` 組合的回傳欄位、不合法的值回傳 `422`、旗標不會殘留到下一個請求，以及並發請求的結果內容比對。
+
 ### 📚 文件
 
 完整文件請參考：[docs](https://rapidai.github.io/RapidOCRDocs/main/install_usage/rapidocr_api/usage/)
