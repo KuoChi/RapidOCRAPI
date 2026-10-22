@@ -1,0 +1,36 @@
+name: test
+
+on:
+  push:
+    branches:
+      - coolify-deploy
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest tests
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build -t rapidocr-api .
+      - name: Smoke test
+        run: |
+          docker run -d --name rapidocr-api -p 9003:9003 rapidocr-api
+          for i in $(seq 1 30); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' rapidocr-api)" = healthy ] && break
+            sleep 3
+          done
+          curl -sf -F image_file=@tests/test_files/ch_en_num.jpg http://localhost:9003/ocr \
+            | python3 -c "import json, sys; body = json.load(sys.stdin); assert body and all('rec_txt' in v for v in body.values()), body"
